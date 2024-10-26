@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
+project(xplat_sdl3)
+
 include(FetchContent)
+
+#==============================================================================#
+# Project wide settings                                                        #
+#==============================================================================#
+# Set ON to build a version of SDL3 from Git and set the OFF to use a locally
+# installed SDL3.
+option(USE_VENDORED_LIBS "Use vendored libraries" ON)
 
 # Set output directory for build artifacts, which ensures that the SDL dynamic
 # library is put into the build directory.
@@ -7,10 +16,33 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
 #==============================================================================#
-#  Project Config                                                              #
+# SDL3                                                                         #
 #==============================================================================#
-project(xplat_sdl3)
+# Force the project to link a static build of SDL3 rather than rely on a dynamic
+# library. Static builds are preferred to avoid crashes at program start up on
+# iOS builds.
+set(SDL_SHARED OFF)
+set(SDL_STATIC ON)
 
+# Pull in the SDL3 package.
+if(USE_VENDORED_LIBS)
+  # Check out a fresh copy of SDL3 when using vendored libraries.
+  FetchContent_Declare(
+    SDL3
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG        e292d1f # preview-3.1.3
+  )
+
+  FetchContent_MakeAvailable(SDL3)
+else()
+  # Find SDL3 on the local machine when vendored library usage is disabled.
+  find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-static SDL3-shared)
+endif()
+
+#==============================================================================#
+# Game application target                                                      #
+#==============================================================================#
+### Game configuration. 
 set(GAME_EXE_NAME xplat_sdl3)
 set(GAME_AUTHOR Scott MacDonald)
 set(GAME_COPYRIGHT "Copyright © 2024 Scott MacDonald. All rights reserved.")
@@ -23,110 +55,80 @@ set(APP_VERSION "1.0")
 set(APPLE_DEVICE_FAMILY "1")  # 1 = iOS, 2 = iPad and set to "1,2" for both.
 set(IOS_DEPLOYMENT_TARGET "17")
 
-option(USE_VENDORED_LIBS "Use vendored libraries" ON)
-
-# TODO: Move this down?
+### Declare the top level game exe target.
+# On Android the SDL Java code is hardcoded to load the program entry points
+# from a dynamic library called "libmain.so". Otherwise on all other platforms
+# the game exe is a standard CMake executable target.
 if (ANDROID)
-  # The Java code in SDL on Android is hardcoded to load libmain.so so the
-  # program executable needs to be switched to `main`.
   set(GAME_EXE_NAME main)
   add_library(${GAME_EXE_NAME} SHARED)
 else()
   add_executable(${GAME_EXE_NAME})
 endif()
 
-# TODO: Only include ios storyboard on iOS
+### Source code files.
 target_sources(${GAME_EXE_NAME}
   PRIVATE
     src/main.cpp
 )
 
+### Build configuration.
+# Set the C++ standard to C++/20.
+target_compile_features(${GAME_EXE_NAME} PUBLIC cxx_std_20)
+
+# Link to SDL3
+target_link_libraries(${GAME_EXE_NAME} PUBLIC SDL3::SDL3-static)
+target_compile_definitions(${GAME_EXE_NAME} PUBLIC SDL_MAIN_USE_CALLBACKS)
+
+### Platform specific support.
+# Add additional files require for Apple builds, primarily the application logo
+# and the app launch screen scene.
 if (APPLE)
   target_sources(${GAME_EXE_NAME} PRIVATE logo.png src/iosLaunchScreen.storyboard)
 endif()
 
-# TODO: move line below
-# TODO: c++ latest supported for iOS
-target_compile_features(${GAME_EXE_NAME} PUBLIC cxx_std_20)
-
+# Emscripten (web builds).
 if (CMAKE_SYSTEM_NAME MATCHES Emscripten)
   set(CMAKE_EXECUTABLE_SUFFIX ".html" CACHE INTERNAL "")
 endif()
 
-#==============================================================================#
-# SDL3                                                                         #
-#==============================================================================#
-set(SDL_SHARED OFF)
-set(SDL_STATIC ON)
+# iOS / MacOS build support.
+if(APPLE)
+  set(MACOSX_BUNDLE_EXECUTABLE_NAME "${GAME_EXE_NAME}")
+  set(MACOSX_BUNDLE_BUNDLE_NAME "${APP_BUNDLE_IDENTIFIER}")
+  set(MACOSX_BUNDLE_INFO_STRING "${APP_BUNDLE_IDENTIFIER}")
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER "${APP_BUNDLE_IDENTIFIER}")
+  set(MACOSX_BUNDLE_LONG_VERSION_STRING "${APP_VERSION}")
+  set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}")
+  set(MACOSX_BUNDLE_BUNDLE_VERSION "${APP_VERSION}")
+  set(MACOSX_BUNDLE_COPYRIGHT "${GAME_COPYRIGHT}")
+  set(MACOSX_BUNDLE_ICON_FILE "logo.png")
+  set(MACOSX_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}")
 
-if(USE_VENDORED_LIBS)
-  FetchContent_Declare(
-    SDL3
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG        e292d1f # preview-3.1.3
+  set_target_properties(${GAME_EXE_NAME} PROPERTIES
+    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM  "${APPLE_TEAM_ID}"
+    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${CODE_SIGN_IDENTITY}"
+    XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}"
+    XCODE_ATTRIBUTE_BUNDLE_IDENTIFIER "${APP_BUNDLE_IDENTIFIER}"
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${APP_BUNDLE_IDENTIFIER}"
+    XCODE_ATTRIBUTE_CURRENTYEAR "${CURRENTYEAR}"
+    XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}"
+
+    # Set the app's linker search path to the default location on iOS.
+    #XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
+    
+    # Make an app bundle rather than a bare executable
+    MACOSX_BUNDLE TRUE
+
+    # Info.plist is required for Apple mobile builds otherwise the app will not
+    # launch.
+    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist.in"
+    XCODE_GENERATE_SCHEME TRUE
   )
-
-  FetchContent_MakeAvailable(SDL3)
-else()
-  # 1. Look for a SDL3 package,
-  # 2. look for the SDL3-shared component, and
-  # 3. fail if the shared component cannot be found.
-  find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-static SDL3-shared)
 endif()
-
-target_link_libraries(${GAME_EXE_NAME} PUBLIC SDL3::SDL3-static)
-target_compile_definitions(${GAME_EXE_NAME} PUBLIC SDL_MAIN_USE_CALLBACKS)
-
-# XCode settings
-set(MACOSX_BUNDLE_EXECUTABLE_NAME "${GAME_EXE_NAME}")
-set(MACOSX_BUNDLE_BUNDLE_NAME "${APP_BUNDLE_IDENTIFIER}")
-set(MACOSX_BUNDLE_INFO_STRING "${APP_BUNDLE_IDENTIFIER}")
-set(MACOSX_BUNDLE_GUI_IDENTIFIER "${APP_BUNDLE_IDENTIFIER}")
-set(MACOSX_BUNDLE_LONG_VERSION_STRING "${APP_VERSION}")
-set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}")
-set(MACOSX_BUNDLE_BUNDLE_VERSION "${APP_VERSION}")
-set(MACOSX_BUNDLE_COPYRIGHT "${GAME_COPYRIGHT}")
-set(MACOSX_BUNDLE_ICON_FILE "logo.png")
-set(MACOSX_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}")
-
-set_target_properties(${GAME_EXE_NAME} PROPERTIES
-  XCODE_ATTRIBUTE_DEVELOPMENT_TEAM  "${APPLE_TEAM_ID}"
-  XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${CODE_SIGN_IDENTITY}"
-  XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}"
-  XCODE_ATTRIBUTE_BUNDLE_IDENTIFIER "${APP_BUNDLE_IDENTIFIER}"
-  XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${APP_BUNDLE_IDENTIFIER}"
-  XCODE_ATTRIBUTE_CURRENTYEAR "${CURRENTYEAR}"
-  XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}"
-
-  # Set the app's linker search path to the default location on iOS.
-  #XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
-  
-  # Make an app bundle rather than a bare executable
-  MACOSX_BUNDLE TRUE
-
-  # Info.plist is required for Apple mobile builds otherwise the app will not
-  # launch.
-  MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist.in"
-  XCODE_GENERATE_SCHEME TRUE
-)
 
 # Visual Studio settings
 set_property(
   # The default project.
   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT "${GAME_EXE_NAME}"
 )
-
-# TODO: TEST BELOW CODE!
-# Ensures the app bundle that was built is valid for distribution on macOS.
-# NOTE: `fixup_bundle` does not work on iOS so the project needs to link to the
-#       static library variant of SDL3, or manually copy dylibs + set rpaths.
-#if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-#if(CMAKE_GENERATOR STREQUAL Xcode)
-#    INSTALL(CODE 
-#        "include(BundleUtilities)
-#        fixup_bundle(\"$<TARGET_BUNDLE_DIR:${GAME_EXE_NAME}>\" \"\" \"\")
-#        " 
-#        COMPONENT Runtime
-#    )
-#  install(TARGETS ${GAME_EXE_NAME} BUNDLE DESTINATION ./install)
-#endif()
