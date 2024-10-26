@@ -5,35 +5,35 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<string>en-US</string>
 	<key>UILaunchStoryboardName</key>
 	<string>iosLaunchScreen.storyboard</string>
 	<key>CFBundleExecutable</key>
-	<string>$(GAME_EXE_NAME)</string>
+	<string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
 	<key>CFBundleIconFile</key>
-	<string></string>
+	<string>${MACOSX_BUNDLE_ICON_FILE}</string>
 	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<string>${MACOSX_DEPLOYMENT_TARGET}</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © $(CURRENTYEAR) $(GAME_AUTHOR). All rights reserved.</string>
+	<string>${MACOSX_BUNDLE_COPYRIGHT}</string>
 	<key>NSSupportsAutomaticTermination</key>
 	<true/>
 	<key>NSSupportsSuddenTermination</key>
 	<true/>
 	<key>CFBundleIconFile</key>
-	<string>logo.png</string>
+	<string>${MACOSX_BUNDLE_ICON_FILE}</string>
     <key>UIRequiresFullScreen</key>
     <true/>
 	<key>UISupportedInterfaceOrientations</key>

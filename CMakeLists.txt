@@ -13,6 +13,15 @@ project(xplat_sdl3)
 
 set(GAME_EXE_NAME xplat_sdl3)
 set(GAME_AUTHOR Scott MacDonald)
+set(GAME_COPYRIGHT "Copyright © 2024 Scott MacDonald. All rights reserved.")
+
+set(APPLE_TEAM_ID "X6VYF32YUU")
+set(APPLE_CODE_SIGN_IDENTITY "Apple Development")  # `/usr/bin/env xcrun security find-identity -v -p codesigning`
+set(APP_BUNDLE_IDENTIFIER "com.smacdo.xplatsdl3") 
+set(APP_VERSION "1.0")
+
+set(APPLE_DEVICE_FAMILY "1")  # 1 = iOS, 2 = iPad and set to "1,2" for both.
+set(IOS_DEPLOYMENT_TARGET "17")
 
 option(USE_VENDORED_LIBS "Use vendored libraries" ON)
 
@@ -47,6 +56,9 @@ endif()
 #==============================================================================#
 # SDL3                                                                         #
 #==============================================================================#
+set(SDL_SHARED OFF)
+set(SDL_STATIC ON)
+
 if(USE_VENDORED_LIBS)
   FetchContent_Declare(
     SDL3
@@ -59,25 +71,43 @@ else()
   # 1. Look for a SDL3 package,
   # 2. look for the SDL3-shared component, and
   # 3. fail if the shared component cannot be found.
-  find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
+  find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-static SDL3-shared)
 endif()
 
-target_link_libraries(${GAME_EXE_NAME} PUBLIC SDL3::SDL3)
+target_link_libraries(${GAME_EXE_NAME} PUBLIC SDL3::SDL3-static)
 target_compile_definitions(${GAME_EXE_NAME} PUBLIC SDL_MAIN_USE_CALLBACKS)
 
-
 # XCode settings
-set_target_properties(${EXECUTABLE_NAME} PROPERTIES 
-    # Make an app bundle rather than a bare executable
-    MACOSX_BUNDLE TRUE
-    # Info.plist is required for Apple mobile builds otherwise the app will not
-    # launch.
-    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist.in"
+set(MACOSX_BUNDLE_EXECUTABLE_NAME "${GAME_EXE_NAME}")
+set(MACOSX_BUNDLE_BUNDLE_NAME "${APP_BUNDLE_IDENTIFIER}")
+set(MACOSX_BUNDLE_INFO_STRING "${APP_BUNDLE_IDENTIFIER}")
+set(MACOSX_BUNDLE_GUI_IDENTIFIER "${APP_BUNDLE_IDENTIFIER}")
+set(MACOSX_BUNDLE_LONG_VERSION_STRING "${APP_VERSION}")
+set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}")
+set(MACOSX_BUNDLE_BUNDLE_VERSION "${APP_VERSION}")
+set(MACOSX_BUNDLE_COPYRIGHT "${GAME_COPYRIGHT}")
+set(MACOSX_BUNDLE_ICON_FILE "logo.png")
+set(MACOSX_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}")
 
-    XCODE_GENERATE_SCHEME TRUE
-    XCODE_ATTRIBUTE_BUNDLE_IDENTIFIER "com.smacdo.${GAME_EXE_NAME}"
-	  XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.smacdo.${GAME_EXE_NAME}"
-	  XCODE_ATTRIBUTE_CURRENTYEAR "${CURRENTYEAR}"
+set_target_properties(${GAME_EXE_NAME} PROPERTIES
+  XCODE_ATTRIBUTE_DEVELOPMENT_TEAM  "${APPLE_TEAM_ID}"
+  XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${CODE_SIGN_IDENTITY}"
+  XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}"
+  XCODE_ATTRIBUTE_BUNDLE_IDENTIFIER "${APP_BUNDLE_IDENTIFIER}"
+  XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${APP_BUNDLE_IDENTIFIER}"
+  XCODE_ATTRIBUTE_CURRENTYEAR "${CURRENTYEAR}"
+  XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}"
+
+  # Set the app's linker search path to the default location on iOS.
+  #XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
+  
+  # Make an app bundle rather than a bare executable
+  MACOSX_BUNDLE TRUE
+
+  # Info.plist is required for Apple mobile builds otherwise the app will not
+  # launch.
+  MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist.in"
+  XCODE_GENERATE_SCHEME TRUE
 )
 
 # Visual Studio settings
@@ -91,12 +121,12 @@ set_property(
 # NOTE: `fixup_bundle` does not work on iOS so the project needs to link to the
 #       static library variant of SDL3, or manually copy dylibs + set rpaths.
 #if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-if(CMAKE_GENERATOR STREQUAL Xcode)
-    INSTALL(CODE 
-        "include(BundleUtilities)
-        fixup_bundle(\"$<TARGET_BUNDLE_DIR:${GAME_EXE_NAME}>\" \"\" \"\")
-        " 
-        COMPONENT Runtime
-    )
-  install(TARGETS ${GAME_EXE_NAME} BUNDLE DESTINATION ./install)
-endif()
+#if(CMAKE_GENERATOR STREQUAL Xcode)
+#    INSTALL(CODE 
+#        "include(BundleUtilities)
+#        fixup_bundle(\"$<TARGET_BUNDLE_DIR:${GAME_EXE_NAME}>\" \"\" \"\")
+#        " 
+#        COMPONENT Runtime
+#    )
+#  install(TARGETS ${GAME_EXE_NAME} BUNDLE DESTINATION ./install)
+#endif()
