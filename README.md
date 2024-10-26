@@ -2,11 +2,12 @@
 ## MacOS Desktop
 ```
 $ brew install git cmake pkgconfig libusb
-$ cmake -DCMAKE_BUILD_TYPE=DEBUG -S . -B build/default
+$ cmake -DCMAKE_BUILD_TYPE=DEBUG -S . -B build/generic
 ```
 
 ## MacOS XCode
 ```
 $ brew install git cmake pkgconfig libusb
-$ cmake -G "Xcode" -DCMAKE_SYSTEM_NAME="iOS" -DCMAKE_PLATFORM_NAME="iOS" -S -DSDL_SHARED=OFF . -B build/ios
+$ cmake -G "Xcode" -DCMAKE_SYSTEM_NAME="iOS" -S . -B build/ios
+$ open build/ios/xplat_sdl3.xcodeproj
 ```
