@@ -75,6 +75,11 @@ target_sources(${GAME_EXE_NAME}
     src/main.cpp
 )
 
+### Game asset files.
+set(GAME_CONTENT_FILES
+  content/bubble.png
+)
+
 ### Build configuration.
 # Set the C++ standard to C++/20.
 target_compile_features(${GAME_EXE_NAME} PUBLIC cxx_std_20)
@@ -86,12 +91,6 @@ target_compile_definitions(${GAME_EXE_NAME} PUBLIC SDL_MAIN_USE_CALLBACKS)
 target_link_libraries(${GAME_EXE_NAME} PUBLIC stb_image)
 
 ### Platform specific support.
-# Add additional files require for Apple builds, primarily the application logo
-# and the app launch screen scene.
-if (APPLE)
-  target_sources(${GAME_EXE_NAME} PRIVATE logo.png src/iosLaunchScreen.storyboard)
-endif()
-
 # Emscripten (web builds).
 if (CMAKE_SYSTEM_NAME MATCHES Emscripten)
   set(CMAKE_EXECUTABLE_SUFFIX ".html" CACHE INTERNAL "")
@@ -99,6 +98,22 @@ endif()
 
 # iOS / MacOS build support.
 if(APPLE)
+  # Force the game to build as a MacOS application bundle.
+  #set_target_properties(${GAME_EXE_NAME} PROPERTIES MACOSX_BUNDLE TRUE)
+
+  # Add the application logo and app launch screen scene.
+  target_sources(${GAME_EXE_NAME} PRIVATE logo.png src/iosLaunchScreen.storyboard)
+
+  # Copy game content files to the app resources bundle.
+  target_sources(${GAME_EXE_NAME} PRIVATE ${GAME_CONTENT_FILES})
+
+  set_source_files_properties(
+    ${GAME_CONTENT_FILES}
+    PROPERTIES
+      MACOSX_PACKAGE_LOCATION Resources/content
+  )
+
+  # Various properties required for building and signing apps.
   set(MACOSX_BUNDLE_EXECUTABLE_NAME "${GAME_EXE_NAME}")
   set(MACOSX_BUNDLE_BUNDLE_NAME "${APP_BUNDLE_IDENTIFIER}")
   set(MACOSX_BUNDLE_INFO_STRING "${APP_BUNDLE_IDENTIFIER}")
@@ -110,6 +125,7 @@ if(APPLE)
   set(MACOSX_BUNDLE_ICON_FILE "logo.png")
   set(MACOSX_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}")
 
+  # Apply additional XCode project settings.
   set_target_properties(${GAME_EXE_NAME} PROPERTIES
     XCODE_ATTRIBUTE_DEVELOPMENT_TEAM  "${APPLE_TEAM_ID}"
     XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${CODE_SIGN_IDENTITY}"
@@ -130,6 +146,8 @@ if(APPLE)
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist.in"
     XCODE_GENERATE_SCHEME TRUE
   )
+
+
 endif()
 
 # Visual Studio settings
@@ -141,6 +159,7 @@ set_property(
 #==============================================================================#
 # Game assets                                                                  #
 #==============================================================================#
+# TODO: Verify this works for non-Apple platforms.
 macro(add_assets)
     cmake_parse_arguments("MY" "TARGET" "FILES" ${ARGN})
 

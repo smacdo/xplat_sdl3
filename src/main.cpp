@@ -2,8 +2,9 @@
 #include <SDL3/SDL_main.h>
 #include <stb/stb_image.h>
 
+#include <format>
+
 #include <cmath>
-#include <iostream> // TODO: remove
 #include <unistd.h> // getcwd
 
 struct AppState {
@@ -21,26 +22,64 @@ struct AppState {
 
 // TODO: wrap image_bytes with smart pointer to auto-delete.
 // TODO: rewrite stbi_load to use sdl file loading.
-SDL_Texture* load_texture(SDL_Renderer* renderer, const char* filename) {
+SDL_Texture*
+    load_texture(SDL_Renderer* renderer, const std::string_view filename) {
   SDL_assert(renderer != nullptr);
+
+  // Create the final file path relative to the game's resource directory.
+  const auto full_path = std::format("{}{}", SDL_GetBasePath(), filename);
 
   SDL_LogMessage(
       SDL_LOG_CATEGORY_APPLICATION,
       SDL_LOG_PRIORITY_INFO,
-      "loading texture %s",
-      filename);
+      "loading texture %.*s from path %s",
+      static_cast<int>(filename.length()),
+      filename.data(),
+      full_path.c_str());
+
+  // Read the requested file by wrapping stb_image's io callbacks with SDL's
+  // IO streams API.
+  auto stbio = stbi_io_callbacks{
+      .read = [](void* user, char* data, int size) -> int {
+        SDL_assert(user != nullptr);
+        auto stream = reinterpret_cast<SDL_IOStream*>(user);
+        const auto bytes_read = SDL_ReadIO(stream, data, size);
+        return static_cast<int>(bytes_read);
+      },
+      .skip = [](void* user, int n) -> void {
+        SDL_assert(user != nullptr);
+        auto stream = reinterpret_cast<SDL_IOStream*>(user);
+        SDL_SeekIO(stream, n, SDL_IO_SEEK_CUR);
+      },
+      .eof = [](void* user) -> int {
+        SDL_assert(user != nullptr);
+        auto stream = reinterpret_cast<SDL_IOStream*>(user);
+        return SDL_GetIOStatus(stream) == SDL_IO_STATUS_EOF ? 1 : 0;
+      }};
+
+  SDL_IOStream* file_io_stream = SDL_IOFromFile(full_path.c_str(), "rb");
+
+  if (file_io_stream == nullptr) {
+    SDL_LogError(
+        SDL_LOG_CATEGORY_APPLICATION,
+        "failed to open file io stream: %s",
+        SDL_GetError());
+
+    return nullptr;
+  }
 
   // Load image from disk into raw RGBA bytes using stb_image.
   int width = 0, height = 0, components = 0;
 
-  unsigned char* image_bytes =
-      stbi_load(filename, &width, &height, nullptr, STBI_rgb_alpha);
+  unsigned char* image_bytes = stbi_load_from_callbacks(
+      &stbio, file_io_stream, &width, &height, nullptr, STBI_rgb_alpha);
 
   if (image_bytes == nullptr) {
     SDL_LogError(
         SDL_LOG_CATEGORY_APPLICATION,
         "failed to load texture: %s",
         stbi_failure_reason());
+    SDL_CloseIO(file_io_stream); // TODO: warn if this returns false.
     return nullptr;
   }
 
@@ -62,6 +101,10 @@ SDL_Texture* load_texture(SDL_Renderer* renderer, const char* filename) {
         SDL_LOG_CATEGORY_APPLICATION,
         "failed to create sdl texture when loading texture: %s",
         SDL_GetError());
+
+    stbi_image_free(image_bytes);
+    SDL_CloseIO(file_io_stream); // TODO: warn if this returns false.
+
     return nullptr;
   }
 
@@ -69,13 +112,16 @@ SDL_Texture* load_texture(SDL_Renderer* renderer, const char* filename) {
 
   stbi_image_free(image_bytes);
 
+  SDL_CloseIO(file_io_stream); // TODO: warn if this returns false.
+
   SDL_LogMessage(
       SDL_LOG_CATEGORY_APPLICATION,
       SDL_LOG_PRIORITY_DEBUG,
-      "loaded texture width = %d, height = %d, file = %s",
+      "loaded texture width = %d, height = %d, file = %.*s",
       width,
       height,
-      filename);
+      static_cast<int>(filename.length()),
+      filename.data());
 
   return texture;
 }
@@ -139,7 +185,7 @@ SDL_AppResult SDL_AppInit(void** app_state_in, int argc, char* argv[]) {
 
   // Load game resources.
   // TODO: Move this section to dedicated gameplay module.
-  SDL_Texture* bubble = load_texture(renderer, "bubble.png");
+  SDL_Texture* bubble = load_texture(renderer, "content/bubble.png");
 
   if (bubble == nullptr) {
     SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "failed to load bubble image");
