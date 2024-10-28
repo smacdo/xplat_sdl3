@@ -9,6 +9,7 @@
   "files.associations": {
     "string_view": "cpp",
     "algorithm": "cpp",
-    "cmath": "cpp"
+    "cmath": "cpp",
+    "cstdio": "cpp"
   }
 }

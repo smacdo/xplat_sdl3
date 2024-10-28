@@ -13,10 +13,18 @@ void SdlIoCloser::operator()(SDL_IOStream* stream) const noexcept {
   }
 }
 
+void SdlRendererDestroyer::operator()(SDL_Renderer* renderer) const noexcept {
+  SDL_DestroyRenderer(renderer);
+}
+
 void SdlSurfaceCloser::operator()(SDL_Surface* surface) const noexcept {
   SDL_DestroySurface(surface);
 }
 
 void SdlTextureCloser::operator()(SDL_Texture* texture) const noexcept {
   SDL_DestroyTexture(texture);
+}
+
+void SdlWindowDestroyer::operator()(SDL_Window* window) const noexcept {
+  SDL_DestroyWindow(window);
 }
