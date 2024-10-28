@@ -48,9 +48,11 @@ add_subdirectory(third-party/stb)
 ### Library definition and source code files.
 add_library(forge STATIC
   headers/forge/content.h
+  headers/forge/game.h
   headers/forge/support/sdl_support.h
   headers/forge/support/stb_support.h
   src/forge/content.cpp
+  src/forge/game.cpp
   src/forge/support/sdl_support.cpp
   src/forge/support/stb_support.cpp
 )
@@ -96,6 +98,8 @@ endif()
 ### Source code files.
 target_sources(${GAME_EXE_NAME}
   PRIVATE
+    src/bubble_game.cpp
+    src/bubble_game.h
     src/main.cpp
 )
 

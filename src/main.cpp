@@ -1,4 +1,6 @@
-#include <forge/content.h>
+#include "bubble_game.h"
+
+#include <forge/game.h>
 #include <forge/support/sdl_support.h>
 #include <forge/support/stb_support.h>
 
@@ -14,16 +16,16 @@ struct AppState {
   AppState(
       SDL_Window* window,
       SDL_Renderer* renderer,
-      unique_sdl_texture_ptr bubble)
+      std::unique_ptr<Game> game)
       : window(window),
         renderer(renderer),
-        bubble(std::move(bubble)) {}
+        game(std::move(game)) {}
 
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
   SDL_AppResult app_quit = SDL_APP_CONTINUE;
 
-  unique_sdl_texture_ptr bubble = nullptr;
+  std::unique_ptr<Game> game;
 };
 
 SDL_AppResult SDL_AppInit(void** app_state_in, int argc, char* argv[]) {
@@ -84,20 +86,22 @@ SDL_AppResult SDL_AppInit(void** app_state_in, int argc, char* argv[]) {
   }
 
   // Load game resources.
-  // TODO: Move this section to dedicated gameplay module.
-  auto bubble = load_texture(renderer, "content/bubble.png");
+  auto game = std::make_unique<BubbleGame>();
+  const auto result = game->on_init(renderer, window);
 
-  if (bubble == nullptr) {
-    SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "failed to load bubble image");
+  if (result == SDL_APP_FAILURE) {
+    SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Game failed to initialize");
     return SDL_APP_FAILURE;
   }
+
+  SDL_Log("Game has been initialized");
 
   // Initialize application context state now that the application has been
   // succesfully initialized.
   auto app_state = reinterpret_cast<AppState**>(app_state_in);
-  *app_state = new AppState{window, renderer, std::move(bubble)};
+  *app_state = new AppState{window, renderer, std::move(game)};
 
-  SDL_Log("Application started successfully !");
+  SDL_Log("Application started successfully!");
 
   return SDL_APP_CONTINUE;
 }
@@ -114,34 +118,14 @@ SDL_AppResult SDL_AppEvent(void* app_state_untyped, SDL_Event* event) {
 
 SDL_AppResult SDL_AppIterate(void* app_state_untyped) {
   auto* app_state = reinterpret_cast<AppState*>(app_state_untyped);
+  const auto result =
+      app_state->game->on_iterate(app_state->renderer, app_state->window);
 
-  // Draw a color that changes over time.
-  const auto time = SDL_GetTicks() / 1000.f;
-
-  SDL_SetRenderDrawColor(
-      app_state->renderer,
-      (std::sin(time) + 1) / 2.0 * 255,
-      (std::sin(time / 2) + 1) / 2.0 * 255,
-      (std::sin(time) * 2 + 1) / 2.0 * 255,
-      SDL_ALPHA_OPAQUE);
-
-  SDL_RenderClear(app_state->renderer);
-
-  SDL_assert(app_state->bubble.get() != nullptr);
-
-  SDL_FRect src_rect{0, 0, 512, 512};
-  SDL_FRect dest_rect{0, 0, 256, 256};
-
-  if (!SDL_RenderTexture(
-          app_state->renderer,
-          app_state->bubble.get(),
-          &src_rect,
-          &dest_rect)) {
-    SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "SDL Error: %s", SDL_GetError());
+  if (result == SDL_APP_FAILURE) {
+    SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Game iteration failed");
     return SDL_APP_FAILURE;
   }
 
-  SDL_RenderPresent(app_state->renderer);
   return app_state->app_quit;
 }
 
