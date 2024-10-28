@@ -16,3 +16,7 @@ void SdlIoCloser::operator()(SDL_IOStream* stream) const noexcept {
 void SdlSurfaceCloser::operator()(SDL_Surface* surface) const noexcept {
   SDL_DestroySurface(surface);
 }
+
+void SdlTextureCloser::operator()(SDL_Texture* texture) const noexcept {
+  SDL_DestroyTexture(texture);
+}
