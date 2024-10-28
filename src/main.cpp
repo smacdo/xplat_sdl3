@@ -1,8 +1,12 @@
+#include <forge/support/sdl_support.h>
+#include <forge/support/stb_support.h>
+
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <stb/stb_image.h>
+#include <stb/stb_image.h> // TODO: remove when load_texture moved.
 
 #include <format>
+#include <memory>
 
 #include <cmath>
 #include <unistd.h> // getcwd
@@ -20,8 +24,9 @@ struct AppState {
   SDL_Texture* bubble = nullptr;
 };
 
-// TODO: wrap image_bytes with smart pointer to auto-delete.
-// TODO: rewrite stbi_load to use sdl file loading.
+/// TODO: Document this function
+/// TODO: Code example this function.
+/// TODO: Return std::unique_ptr<SDL_Texture, ...> for this function.
 SDL_Texture*
     load_texture(SDL_Renderer* renderer, const std::string_view filename) {
   SDL_assert(renderer != nullptr);
@@ -39,25 +44,8 @@ SDL_Texture*
 
   // Read the requested file by wrapping stb_image's io callbacks with SDL's
   // IO streams API.
-  auto stbio = stbi_io_callbacks{
-      .read = [](void* user, char* data, int size) -> int {
-        SDL_assert(user != nullptr);
-        auto stream = reinterpret_cast<SDL_IOStream*>(user);
-        const auto bytes_read = SDL_ReadIO(stream, data, size);
-        return static_cast<int>(bytes_read);
-      },
-      .skip = [](void* user, int n) -> void {
-        SDL_assert(user != nullptr);
-        auto stream = reinterpret_cast<SDL_IOStream*>(user);
-        SDL_SeekIO(stream, n, SDL_IO_SEEK_CUR);
-      },
-      .eof = [](void* user) -> int {
-        SDL_assert(user != nullptr);
-        auto stream = reinterpret_cast<SDL_IOStream*>(user);
-        return SDL_GetIOStatus(stream) == SDL_IO_STATUS_EOF ? 1 : 0;
-      }};
-
-  SDL_IOStream* file_io_stream = SDL_IOFromFile(full_path.c_str(), "rb");
+  std::unique_ptr<SDL_IOStream, SdlIoCloser> file_io_stream{
+      SDL_IOFromFile(full_path.c_str(), "rb")};
 
   if (file_io_stream == nullptr) {
     SDL_LogError(
@@ -69,17 +57,23 @@ SDL_Texture*
   }
 
   // Load image from disk into raw RGBA bytes using stb_image.
-  int width = 0, height = 0, components = 0;
+  const auto stbio = create_stbi_sdl2_io_callbacks();
+  int width = 0, height = 0;
 
-  unsigned char* image_bytes = stbi_load_from_callbacks(
-      &stbio, file_io_stream, &width, &height, nullptr, STBI_rgb_alpha);
+  std::unique_ptr<unsigned char, StbImageBytesDeleter> image_bytes{
+      stbi_load_from_callbacks(
+          &stbio,
+          file_io_stream.get(),
+          &width,
+          &height,
+          nullptr,
+          STBI_rgb_alpha)};
 
   if (image_bytes == nullptr) {
     SDL_LogError(
         SDL_LOG_CATEGORY_APPLICATION,
         "failed to load texture: %s",
         stbi_failure_reason());
-    SDL_CloseIO(file_io_stream); // TODO: warn if this returns false.
     return nullptr;
   }
 
@@ -87,14 +81,14 @@ SDL_Texture*
   // blit the pixel bytes into the newly created texture.
   constexpr int RGBA_BYTES_PER_PIXEL = 4; // RGBA
 
-  SDL_Surface* surface = SDL_CreateSurfaceFrom(
+  std::unique_ptr<SDL_Surface, SdlSurfaceCloser> surface{SDL_CreateSurfaceFrom(
       width,
       height,
       SDL_PIXELFORMAT_ARGB8888,
-      image_bytes,
-      width * RGBA_BYTES_PER_PIXEL);
+      image_bytes.get(),
+      width * RGBA_BYTES_PER_PIXEL)};
 
-  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface.get());
 
   if (texture == nullptr) {
     SDL_LogError(
@@ -102,17 +96,8 @@ SDL_Texture*
         "failed to create sdl texture when loading texture: %s",
         SDL_GetError());
 
-    stbi_image_free(image_bytes);
-    SDL_CloseIO(file_io_stream); // TODO: warn if this returns false.
-
     return nullptr;
   }
-
-  SDL_DestroySurface(surface);
-
-  stbi_image_free(image_bytes);
-
-  SDL_CloseIO(file_io_stream); // TODO: warn if this returns false.
 
   SDL_LogMessage(
       SDL_LOG_CATEGORY_APPLICATION,

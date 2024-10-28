@@ -43,6 +43,28 @@ endif()
 add_subdirectory(third-party/stb)
 
 #==============================================================================#
+# Forge engine                                                                 #
+#==============================================================================#
+### Library definition and source code files.
+add_library(forge STATIC
+  headers/forge/support/sdl_support.h
+  headers/forge/support/stb_support.h
+  src/forge/support/sdl_support.cpp
+  src/forge/support/stb_support.cpp
+)
+
+### Build configuration.
+# Set header root to be headers/.
+target_include_directories(forge PUBLIC headers/ PRIVATE src/)
+
+# Set the C++ standard to C++/20.
+target_compile_features(forge PUBLIC cxx_std_20)
+
+# Link to SDL3 and other third party libraries.
+target_link_libraries(forge PUBLIC SDL3::SDL3-static)
+target_link_libraries(forge PUBLIC stb_image)
+
+#==============================================================================#
 # Game application target                                                      #
 #==============================================================================#
 ### Game configuration. 
@@ -85,6 +107,8 @@ set(GAME_CONTENT_FILES
 target_compile_features(${GAME_EXE_NAME} PUBLIC cxx_std_20)
 
 # Link to SDL3 and other third party libraries.
+target_link_libraries(${GAME_EXE_NAME} PUBLIC forge)
+
 target_link_libraries(${GAME_EXE_NAME} PUBLIC SDL3::SDL3-static)
 target_compile_definitions(${GAME_EXE_NAME} PUBLIC SDL_MAIN_USE_CALLBACKS)
 
