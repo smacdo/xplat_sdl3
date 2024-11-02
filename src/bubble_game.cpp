@@ -17,6 +17,9 @@
 // TODO: Make game bubble speed independent of window dimensions.
 // TODO: Scale bubbles to size of window.
 // TODO: Pop bubbles.
+// TODO: Draw a gradient water background.
+// TODO: Play a bubble pop sound.
+// TODO: Display the number of bubbles popped.
 
 constexpr int BUBBLE_COUNT_MAX = 10;
 constexpr int BUBBLE_COUNT_MIN = 5;
@@ -73,8 +76,7 @@ SDL_AppResult BubbleGame::on_input(float delta_s) { return SDL_APP_SUCCESS; }
 SDL_AppResult BubbleGame::on_update(float delta_s) {
   elapsed_time_s_ += delta_s;
 
-  // Spawn bubbles when there are too few bubbles on the screen.
-  // TODO: Rewrite to be safer, eg no possibility of infinite loop
+  // Randomizers for bubble properties when spawning.
   const auto max_bubble_size =
       *(std::max_element(BUBBLE_SIZES.begin(), BUBBLE_SIZES.end()));
 
@@ -85,25 +87,24 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
   std::uniform_real_distribution<float> speed_distribution(
       BUBBLE_MIN_FLOAT_SPEED, BUBBLE_MAX_FLOAT_SPEED);
 
+  // Spawn bubbles when there are too few bubbles on the screen.
   const auto population = bubble_count();
-  const auto spawn_count = bubbles_.size() - population;
-  size_t next_index = 0;
-  int safety_counter = 1000;
+  auto spawn_count = bubbles_.size() - population;
 
-  for (size_t i = 0; i < spawn_count; ++i) {
-    SDL_assert(safety_counter-- > 0);
+  for (auto& bubble : bubbles_) {
+    // Stop searching for new spawn slots when the spawner has hit its target.
+    if (spawn_count == 0) {
+      break;
+    }
 
-    while (next_index < bubbles_.size()) {
-      SDL_assert(safety_counter-- > 0);
+    // Check if this bubble slot is dead, and if so then spawn a new bubble in.
+    if (!bubble.alive) {
+      bubble.alive = true;
+      bubble.x = start_x_distribution(random_engine_);
+      bubble.y = -bubble.size;
+      bubble.speed = speed_distribution(random_engine_);
 
-      if (!bubbles_[next_index].alive) {
-        bubbles_[next_index].alive = true;
-        bubbles_[next_index].x = start_x_distribution(random_engine_);
-        bubbles_[next_index].y = -bubbles_[next_index].size;
-        bubbles_[next_index].speed = speed_distribution(random_engine_);
-      }
-
-      next_index++;
+      spawn_count--;
     }
   }
 
