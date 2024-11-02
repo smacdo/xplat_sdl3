@@ -10,6 +10,7 @@
     "string_view": "cpp",
     "algorithm": "cpp",
     "cmath": "cpp",
-    "cstdio": "cpp"
+    "cstdio": "cpp",
+    "vector": "cpp"
   }
 }

@@ -5,26 +5,51 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
+#include <array>
 #include <cmath>
+#include <random>
 
-// TODO: Reset bubbles when they hit the top of the screen.
 // TODO: Spawn new bubbles randomly.
-// TODO: Invert Y (world +Y should be up).
-// TODO: Use window dimensions.
+// TODO: Spawn bubbles in waves
+// TODO: Spawn random counts of bubbles.
+// TODO: Update window dimensions when they change.
 // TODO: Make game bubble speed independent of window dimensions.
 // TODO: Scale bubbles to size of window.
-// TODO: Bubbles should have different speeds.
 // TODO: Pop bubbles.
 
+constexpr int BUBBLE_COUNT_MAX = 10;
+constexpr int BUBBLE_COUNT_MIN = 5;
+
 constexpr float BUBBLE_PIXEL_WIDTH_AND_HEIGHT = 512.f;
-constexpr float BUBBLE_FLOAT_SPEED = 100.f;
+constexpr float BUBBLE_MIN_FLOAT_SPEED = 50.f;
+constexpr float BUBBLE_MAX_FLOAT_SPEED = 75.f;
+constexpr float BUBBLE_MIN_X = 0.f;
+constexpr float BUBBLE_MAX_X = 300.f;
+constexpr std::array<float, 4> BUBBLE_SIZES = {48.0f, 64.0f, 72.0f, 128.0f};
 
 BubbleGame::BubbleGame(
     unique_sdl_renderer_ptr renderer,
     unique_sdl_window_ptr window)
-    : Game(std::move(renderer), std::move(window)) {}
+    : Game(std::move(renderer), std::move(window)),
+      random_device_(),
+      random_engine_(random_device_()) {}
 
 SDL_AppResult BubbleGame::on_init() {
+  // Cache the window rendering size.
+  if (!SDL_GetRenderOutputSize(
+          renderer_.get(), &render_width_, &render_height_)) {
+    SDL_LogError(
+        SDL_LOG_CATEGORY_APPLICATION, "failed to query render output size");
+    return SDL_APP_FAILURE;
+  }
+
+  SDL_LogInfo(
+      SDL_LOG_CATEGORY_APPLICATION,
+      "Render output is %dx%d",
+      render_width_,
+      render_height_);
+
   // Load bubble texture.
   bubble_texture_ = load_texture(renderer_.get(), "content/bubble.png");
 
@@ -33,16 +58,11 @@ SDL_AppResult BubbleGame::on_init() {
     return SDL_APP_FAILURE;
   }
 
-  // Create a random initial group of bubbles.
-  constexpr int INITIAL_BUBBLE_COUNT = 5;
+  // Instantiate the pool of bubbles.
+  bubbles_.reserve(BUBBLE_COUNT_MAX);
 
-  for (int i = 0; i < INITIAL_BUBBLE_COUNT; ++i) {
-    bubbles_.push_back(SDL_FRect{
-        .x = i * 50.f,
-        .y = 0.f,
-        .w = 64.f,
-        .h = 64.f,
-    });
+  for (size_t i = 0; i < BUBBLE_COUNT_MAX; ++i) {
+    bubbles_.push_back(Bubble{});
   }
 
   return SDL_APP_CONTINUE;
@@ -53,10 +73,55 @@ SDL_AppResult BubbleGame::on_input(float delta_s) { return SDL_APP_SUCCESS; }
 SDL_AppResult BubbleGame::on_update(float delta_s) {
   elapsed_time_s_ += delta_s;
 
-  // Make bubbles float upwards.
+  // Spawn bubbles when there are too few bubbles on the screen.
+  // TODO: Rewrite to be safer, eg no possibility of infinite loop
+  const auto max_bubble_size =
+      *(std::max_element(BUBBLE_SIZES.begin(), BUBBLE_SIZES.end()));
+
+  std::uniform_real_distribution<float> start_x_distribution(
+      BUBBLE_MIN_X + max_bubble_size / 2.f,
+      static_cast<float>(render_width_) - max_bubble_size / 2.f);
+
+  std::uniform_real_distribution<float> speed_distribution(
+      BUBBLE_MIN_FLOAT_SPEED, BUBBLE_MAX_FLOAT_SPEED);
+
+  const auto population = bubble_count();
+  const auto spawn_count = bubbles_.size() - population;
+  size_t next_index = 0;
+  int safety_counter = 1000;
+
+  for (size_t i = 0; i < spawn_count; ++i) {
+    SDL_assert(safety_counter-- > 0);
+
+    while (next_index < bubbles_.size()) {
+      SDL_assert(safety_counter-- > 0);
+
+      if (!bubbles_[next_index].alive) {
+        bubbles_[next_index].alive = true;
+        bubbles_[next_index].x = start_x_distribution(random_engine_);
+        bubbles_[next_index].y = -bubbles_[next_index].size;
+        bubbles_[next_index].speed = speed_distribution(random_engine_);
+      }
+
+      next_index++;
+    }
+  }
+
+  // Make the bubbles float upwards.
   // TODO: A nicer animation than simply moving up.
   for (auto& bubble : bubbles_) {
-    bubble.y += BUBBLE_FLOAT_SPEED * delta_s;
+    if (!bubble.alive) {
+      continue;
+    }
+
+    bubble.y += bubble.speed * delta_s;
+  }
+
+  // Despawn bubbles when they float past the top.
+  for (auto& bubble : bubbles_) {
+    if (bubble.y >= render_height_ + bubble.size) {
+      bubble.alive = false;
+    }
   }
 
   return SDL_APP_SUCCESS;
@@ -72,7 +137,7 @@ SDL_AppResult BubbleGame::on_render(float extrapolation) {
 
   // Draw bubbles on the screen.
   for (const auto& bubble : bubbles_) {
-    draw_bubble(bubble.x, bubble.y, bubble.w);
+    draw_bubble(bubble.x, bubble.y, bubble.size);
   }
 
   // Done!
@@ -85,7 +150,7 @@ SDL_AppResult BubbleGame::draw_bubble(float x, float y, float size) const {
 
   SDL_FRect src_rect{
       0, 0, BUBBLE_PIXEL_WIDTH_AND_HEIGHT, BUBBLE_PIXEL_WIDTH_AND_HEIGHT};
-  SDL_FRect dest_rect{x, y, size, size};
+  SDL_FRect dest_rect{x, render_height_ - y, size, size};
 
   if (!SDL_RenderTexture(
           renderer_.get(), bubble_texture_.get(), &src_rect, &dest_rect)) {
@@ -94,4 +159,11 @@ SDL_AppResult BubbleGame::draw_bubble(float x, float y, float size) const {
   }
 
   return SDL_APP_CONTINUE;
+}
+
+size_t BubbleGame::bubble_count() const {
+  return std::count_if(
+      bubbles_.begin(), bubbles_.end(), [](const auto& bubble) {
+        return bubble.alive;
+      });
 }
