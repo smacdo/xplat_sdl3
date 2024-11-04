@@ -57,8 +57,23 @@ SDL_AppResult Game::init() {
 SDL_AppResult Game::handle_event(SDL_Event* event) {
   SDL_assert(event != nullptr);
 
-  if (event->type == SDL_EVENT_QUIT) {
-    quit_requested_ = true;
+  switch (event->type) {
+    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+      const auto new_width = event->window.data1;
+      const auto new_height = event->window.data2;
+
+      SDL_Log(
+          "Game::handle_event SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED, w = %d, h = "
+          "%d",
+          new_width,
+          new_height);
+
+      return on_render_resized(new_width, new_height);
+    }
+    case SDL_EVENT_QUIT:
+      SDL_Log("Game::handle_event SDL_EVENT_QUIT, quit_requested => true");
+      quit_requested_ = true;
+      break;
   }
 
   return SDL_APP_CONTINUE;
@@ -105,16 +120,20 @@ SDL_AppResult Game::iterate() {
   return quit_requested_ ? SDL_APP_SUCCESS : SDL_APP_CONTINUE;
 }
 
-SDL_AppResult Game::on_init() { return SDL_APP_SUCCESS; }
+SDL_AppResult Game::on_init() { return SDL_APP_CONTINUE; }
 
-SDL_AppResult Game::on_input(float /*delta_s*/) { return SDL_APP_SUCCESS; }
+SDL_AppResult Game::on_input(float /*delta_s*/) { return SDL_APP_CONTINUE; }
 
-SDL_AppResult Game::on_update(float /*delta_s*/) { return SDL_APP_SUCCESS; }
+SDL_AppResult Game::on_update(float /*delta_s*/) { return SDL_APP_CONTINUE; }
 
 SDL_AppResult Game::on_render(float /*extrapolation*/) {
   SDL_SetRenderDrawColor(renderer_.get(), 1.0f, 1.0f, 0.0f, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(renderer_.get());
   SDL_RenderPresent(renderer_.get());
 
-  return SDL_APP_SUCCESS;
+  return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult Game::on_render_resized(int width, int height) {
+  return SDL_APP_CONTINUE;
 }

@@ -172,6 +172,12 @@ SDL_AppResult BubbleGame::on_render(float extrapolation) {
   return SDL_APP_SUCCESS;
 }
 
+SDL_AppResult BubbleGame::on_render_resized(int width, int height) {
+  render_width_ = width;
+  render_height_ = height;
+  return SDL_APP_CONTINUE;
+}
+
 SDL_AppResult BubbleGame::draw_bubble(float x, float y, float size) const {
   SDL_assert(bubble_texture_.get() != nullptr);
 

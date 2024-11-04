@@ -52,6 +52,9 @@ protected:
   ///                      time between the last update and the upcoming update.
   virtual SDL_AppResult on_render(float extrapolation);
 
+  /// Called when the main render window is resized.
+  virtual SDL_AppResult on_render_resized(int width, int height);
+
 protected:
   /// The `SDL_Renderer` for the game's main window.
   unique_sdl_renderer_ptr renderer_;

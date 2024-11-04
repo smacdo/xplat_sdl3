@@ -17,6 +17,7 @@ protected:
   SDL_AppResult on_input(float delta_s) override;
   SDL_AppResult on_update(float delta_s) override;
   SDL_AppResult on_render(float extrapolation) override;
+  SDL_AppResult on_render_resized(int width, int height) override;
 
 private:
   SDL_AppResult draw_bubble(float x, float y, float size) const;
