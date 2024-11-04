@@ -31,6 +31,9 @@ private:
     float y = 0.0;
     float size = 64.0;
     float speed = 100.0;
+    float wobble_x = 0.0f; // ampltiude
+    float wobble_period = 1.0f;
+    float wobble_offset = 0.0f;
     bool alive = false;
   };
 

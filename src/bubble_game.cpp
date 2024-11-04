@@ -21,14 +21,21 @@
 // TODO: Play a bubble pop sound.
 // TODO: Display the number of bubbles popped.
 
-constexpr int BUBBLE_COUNT_MAX = 10;
-constexpr int BUBBLE_COUNT_MIN = 5;
+constexpr int BUBBLE_COUNT_MAX = 20;
+constexpr int BUBBLE_COUNT_MIN = 20;
 
 constexpr float BUBBLE_PIXEL_WIDTH_AND_HEIGHT = 512.f;
-constexpr float BUBBLE_MIN_FLOAT_SPEED = 50.f;
-constexpr float BUBBLE_MAX_FLOAT_SPEED = 75.f;
+constexpr float BUBBLE_MIN_FLOAT_SPEED = 100.f;
+constexpr float BUBBLE_MAX_FLOAT_SPEED = 150.f;
 constexpr float BUBBLE_MIN_X = 0.f;
 constexpr float BUBBLE_MAX_X = 300.f;
+constexpr float BUBBLE_MIN_WOBBLE_X = 0.05f; // amplitude
+constexpr float BUBBLE_MAX_WOBBLE_X = 1.f;
+constexpr float BUBBLE_MIN_WOBBLE_PERIOD = 0.2f;
+constexpr float BUBBLE_MAX_WOBBLE_PERIOD = 2.0f;
+constexpr float BUBBLE_MIN_WOBBLE_OFFSET = 0.0f;
+constexpr float BUBBLE_MAX_WOBBLE_OFFSET = M_2_PI;
+
 constexpr std::array<float, 4> BUBBLE_SIZES = {48.0f, 64.0f, 72.0f, 128.0f};
 
 BubbleGame::BubbleGame(
@@ -87,6 +94,15 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
   std::uniform_real_distribution<float> speed_distribution(
       BUBBLE_MIN_FLOAT_SPEED, BUBBLE_MAX_FLOAT_SPEED);
 
+  std::uniform_real_distribution<float> wobble_x_distribution(
+      BUBBLE_MIN_WOBBLE_X, BUBBLE_MAX_WOBBLE_X);
+
+  std::uniform_real_distribution<float> wobble_p_distribution(
+      BUBBLE_MIN_WOBBLE_PERIOD, BUBBLE_MAX_WOBBLE_PERIOD);
+
+  std::uniform_real_distribution<float> wobble_offset_distribution(
+      BUBBLE_MIN_WOBBLE_OFFSET, BUBBLE_MAX_WOBBLE_OFFSET);
+
   // Spawn bubbles when there are too few bubbles on the screen.
   const auto population = bubble_count();
   auto spawn_count = bubbles_.size() - population;
@@ -103,6 +119,9 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
       bubble.x = start_x_distribution(random_engine_);
       bubble.y = -bubble.size;
       bubble.speed = speed_distribution(random_engine_);
+      bubble.wobble_x = wobble_x_distribution(random_engine_);
+      bubble.wobble_period = wobble_p_distribution(random_engine_);
+      bubble.wobble_offset = wobble_offset_distribution(random_engine_);
 
       spawn_count--;
     }
@@ -110,12 +129,19 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
 
   // Make the bubbles float upwards.
   // TODO: A nicer animation than simply moving up.
+  // TODO: Normalize the y to [0, 1] when doing x sin animation.
   for (auto& bubble : bubbles_) {
     if (!bubble.alive) {
       continue;
     }
 
     bubble.y += bubble.speed * delta_s;
+    // bubble.x += sin(bubble.y / 25) * 2.5;
+    bubble.x +=
+        sin(bubble.wobble_offset + elapsed_time_s_ * bubble.wobble_period) *
+        bubble.wobble_x;
+
+    // sin(_controller.value * 2 * pi + bubble.y * 10) * 0.005
   }
 
   // Despawn bubbles when they float past the top.
