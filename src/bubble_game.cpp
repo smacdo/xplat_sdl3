@@ -127,7 +127,6 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
     }
 
     bubble.y += bubble.speed * delta_s;
-    // bubble.x += sin(bubble.y / 25) * 2.5;
     bubble.x +=
         sin(bubble.wobble_offset + elapsed_time_s_ * bubble.wobble_period) *
         bubble.wobble_x;
