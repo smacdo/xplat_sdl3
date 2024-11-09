@@ -13,6 +13,13 @@ add_library(forge STATIC
   src/support/stb_support.cpp
 )
 
+### Unit tests
+include(GoogleTest)
+
+add_executable(test_forge_example "tests/test_example.cpp")
+target_link_libraries(test_forge_example PUBLIC GTest::gtest_main forge)
+target_compile_features(test_forge_example PUBLIC cxx_std_20)
+
 ### Build configuration.
 # Set header root to be headers/.
 target_include_directories(forge PUBLIC headers PRIVATE src)
