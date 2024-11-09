@@ -29,6 +29,12 @@ public:
   /// Advance the game's simulation logic and rendering.
   SDL_AppResult iterate();
 
+  /// Get the width of the main rendering window in pixel units.
+  int pixel_width() const { return pixel_width_; }
+
+  /// Get the height of the main rendering window in pixel units.
+  int pixel_height() const { return pixel_height_; }
+
 protected:
   /// Called at the end of the game initialization phase.
   virtual SDL_AppResult on_init();
@@ -50,10 +56,16 @@ protected:
   ///
   /// @param extrapolation An interpolation value [0.0, 1.0) representing the
   ///                      time between the last update and the upcoming update.
-  virtual SDL_AppResult on_render(float extrapolation);
+  virtual SDL_AppResult on_render(float delta_s, float extrapolation);
 
   /// Called when the main render window is resized.
   virtual SDL_AppResult on_render_resized(int width, int height);
+
+  /// Called when the mouse is clicked inside the main render window.
+  virtual SDL_AppResult on_mouse_click(int mouse_x, int mouse_y);
+
+  /// Called when a finger is starts touching inside the main render window.
+  virtual SDL_AppResult on_touch_finger_down(int touch_x, int touch_y);
 
 protected:
   /// The `SDL_Renderer` for the game's main window.
@@ -64,6 +76,12 @@ protected:
 
   /// True if the game should exit, false otherwise.
   bool quit_requested_ = false;
+
+  /// Width of the main rendering window in pixels.
+  int pixel_width_ = 0;
+
+  /// Height of the main rendering window in pixels.
+  int pixel_height_ = 0;
 
 public:
   /// The number of milliseconds between game logic updates.

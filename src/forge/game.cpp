@@ -36,18 +36,18 @@ SDL_AppResult Game::init() {
 
   // Show the main window.
   SDL_ShowWindow(window_.get());
-
-  // Print some debug information about the app window.
-  int width = 0, height = 0, bbwidth = 0, bbheight = 0;
+  int width = 0, height = 0;
 
   SDL_GetWindowSize(window_.get(), &width, &height);
-  SDL_GetWindowSizeInPixels(window_.get(), &bbwidth, &bbheight);
+  SDL_GetWindowSizeInPixels(window_.get(), &pixel_width_, &pixel_height_);
 
   SDL_Log("Window size: %ix%i", width, height);
-  SDL_Log("Backbuffer size: %ix%i", bbwidth, bbheight);
+  SDL_Log("Backbuffer size: %ix%i", pixel_width_, pixel_height_);
 
-  if (width != bbwidth) {
-    SDL_Log("High DPI environment detected");
+  if (width != pixel_width_) {
+    SDL_Log(
+        "High DPI environment detected, pixel density = %f",
+        SDL_GetWindowPixelDensity(window_.get()));
   }
 
   // Initialize the actual game.
@@ -59,16 +59,48 @@ SDL_AppResult Game::handle_event(SDL_Event* event) {
 
   switch (event->type) {
     case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
-      const auto new_width = event->window.data1;
-      const auto new_height = event->window.data2;
+      pixel_width_ = event->window.data1;
+      pixel_height_ = event->window.data2;
 
       SDL_Log(
           "Game::handle_event SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED, w = %d, h = "
           "%d",
-          new_width,
-          new_height);
+          pixel_width_,
+          pixel_height_);
 
-      return on_render_resized(new_width, new_height);
+      return on_render_resized(pixel_width_, pixel_height_);
+    }
+    case SDL_EVENT_FINGER_DOWN: {
+      // Reject out of bounds touches.
+      // Ref: https://wiki.libsdl.org/SDL3/SDL_TouchFingerEvent
+      if (event->tfinger.x < 0.0 || event->tfinger.x > 1.0 ||
+          event->tfinger.y < 0.0 || event->tfinger.y > 1.0) {
+        break;
+      }
+
+      // Calculate touch location in window by converting from normalized [0, 1]
+      // coordinates to render pixels.
+      const auto touch_x = static_cast<int>(event->tfinger.x * pixel_width());
+      const auto touch_y = static_cast<int>(event->tfinger.y * pixel_height());
+
+      SDL_Log(
+          "Game::handle_event SDL_EVENT_FINGER_DOWN, x = %d, y = %d",
+          touch_x,
+          touch_y);
+
+      return on_touch_finger_down(touch_x, touch_y);
+    }
+    case SDL_EVENT_MOUSE_BUTTON_UP: {
+      const auto pixel_density = SDL_GetWindowPixelDensity(window_.get());
+      const auto mouse_x = static_cast<int>(event->button.x * pixel_density);
+      const auto mouse_y = static_cast<int>(event->button.y * pixel_density);
+
+      SDL_Log(
+          "Game::handle_event SDL_EVENT_MOUSE_BUTTON_UP, x = %d, y = %d",
+          mouse_x,
+          mouse_y);
+
+      return on_mouse_click(mouse_x, mouse_y);
     }
     case SDL_EVENT_QUIT:
       SDL_Log("Game::handle_event SDL_EVENT_QUIT, quit_requested => true");
@@ -113,7 +145,7 @@ SDL_AppResult Game::iterate() {
 
   // Render the game.
   // TODO: Detect when the renderer exceeds the allowed delta time.
-  on_render(lag_time_ms_ / static_cast<float>(kMsPerUpdate));
+  on_render(delta_s, lag_time_ms_ / static_cast<float>(kMsPerUpdate));
 
   // Check if the user wants to continue running the game or if its tiem to
   // quit.
@@ -126,7 +158,7 @@ SDL_AppResult Game::on_input(float /*delta_s*/) { return SDL_APP_CONTINUE; }
 
 SDL_AppResult Game::on_update(float /*delta_s*/) { return SDL_APP_CONTINUE; }
 
-SDL_AppResult Game::on_render(float /*extrapolation*/) {
+SDL_AppResult Game::on_render(float /*delta_s*/, float /*extrapolation*/) {
   SDL_SetRenderDrawColor(renderer_.get(), 1.0f, 1.0f, 0.0f, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(renderer_.get());
   SDL_RenderPresent(renderer_.get());
@@ -135,5 +167,13 @@ SDL_AppResult Game::on_render(float /*extrapolation*/) {
 }
 
 SDL_AppResult Game::on_render_resized(int width, int height) {
+  return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult Game::on_mouse_click(int mouse_x, int mouse_y) {
+  return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult Game::on_touch_finger_down(int touch_x, int touch_y) {
   return SDL_APP_CONTINUE;
 }
