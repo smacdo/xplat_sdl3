@@ -1,5 +1,6 @@
 # build output
 /build
+/out
 
 # Prerequisites
 *.d
@@ -36,3 +37,4 @@
 
 # Other
 .DS_Store
+/.vs

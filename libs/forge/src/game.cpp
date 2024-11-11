@@ -2,8 +2,9 @@
 
 #include <forge/support/sdl_support.h>
 
-#include <stdio.h>  // TODO: remove after debugging
+#ifndef _WIN32
 #include <unistd.h> // getcwd
+#endif
 
 Game::Game(unique_sdl_renderer_ptr renderer, unique_sdl_window_ptr window)
     : renderer_(std::move(renderer)),
@@ -13,20 +14,22 @@ Game::~Game() {}
 
 SDL_AppResult Game::init() {
   // Print start up information to assist with troubleshooting.
-  char cwd[512];
-  getcwd(cwd, sizeof(cwd));
-
   SDL_LogMessage(
       SDL_LOG_CATEGORY_APPLICATION,
       SDL_LOG_PRIORITY_INFO,
       "app base path is %s",
       SDL_GetBasePath());
 
+#ifndef _WIN32
+  char cwd[512];
+  getcwd(cwd, sizeof(cwd));
+
   SDL_LogMessage(
       SDL_LOG_CATEGORY_APPLICATION,
       SDL_LOG_PRIORITY_INFO,
-      "app working directory is %s",
+      "current working directory is %s",
       cwd);
+#endif
 
   // Initialize SDL3 systems.
   if (!SDL_Init(SDL_INIT_VIDEO)) {

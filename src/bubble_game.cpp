@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES // required for M_2_PI
+
 #include "bubble_game.h"
 
 #include <forge/content.h>
