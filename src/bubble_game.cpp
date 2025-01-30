@@ -28,8 +28,8 @@
 constexpr bool DEBUG_RENDER_ENTITY = false;
 constexpr bool DEBUG_RENDER_POP = false;
 
-constexpr int BUBBLE_COUNT_MAX = 25;
-constexpr int BUBBLE_COUNT_MIN = 25;
+constexpr int BUBBLE_COUNT_MAX = 64;
+constexpr int BUBBLE_COUNT_MIN = 64;
 
 constexpr float BUBBLE_PIXEL_WIDTH_AND_HEIGHT = 512.f;
 constexpr float BUBBLE_MIN_FLOAT_SPEED = 90.f;
@@ -42,7 +42,7 @@ constexpr float BUBBLE_MIN_WOBBLE_PERIOD = 0.2f;
 constexpr float BUBBLE_MAX_WOBBLE_PERIOD = 2.0f;
 constexpr float BUBBLE_MIN_WOBBLE_OFFSET = 0.0f;
 constexpr float BUBBLE_MAX_WOBBLE_OFFSET = M_2_PI;
-constexpr float ONE_OVER_SQRT_TWO = 0.7071067812;
+constexpr float BUBBLE_CLICK_FUZZ = 0.9;
 
 constexpr std::array<float, 4> BUBBLE_SIZES = {48.0f, 64.0f, 72.0f, 128.0f};
 
@@ -112,7 +112,7 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
       bubble.alive = true;
       bubble.x = start_x_distribution(random_engine_);
       bubble.y = -bubble.size;
-      bubble.radius = bubble.size / 2.f * ONE_OVER_SQRT_TWO;
+      bubble.radius = bubble.size / 2.f * BUBBLE_CLICK_FUZZ;
       bubble.speed = speed_distribution(random_engine_);
       bubble.wobble_x = wobble_x_distribution(random_engine_);
       bubble.wobble_period = wobble_p_distribution(random_engine_);
@@ -161,8 +161,8 @@ SDL_AppResult BubbleGame::on_render(float delta_s, float extrapolation) {
     draw_bubble(bubble.x, bubble.y, bubble.size);
   }
 
-  // Handle debug drawing.
-  // TODO: refactor.
+  // Draw a debug line from the click point to the top left of the popped
+  // bubble (if debug drawing is active).
   if (debug_draw_time_left_s > 0.0f) {
     SDL_RenderLine(renderer_.get(), debug_mx_, debug_my_, debug_bx_, debug_by_);
 
@@ -244,6 +244,15 @@ bool BubbleGame::pop_bubble_at(float x, float y) {
 
       return true;
     }
+  }
+
+  // No hit
+  if (DEBUG_RENDER_POP) {
+    debug_draw_time_left_s = 10.0f;
+    debug_mx_ = x;
+    debug_my_ = pixel_height() - y;
+    debug_bx_ = x;
+    debug_by_ = pixel_height() - y;
   }
 
   return false;
