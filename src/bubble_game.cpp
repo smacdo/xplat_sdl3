@@ -48,9 +48,12 @@ constexpr std::array<float, 4> BUBBLE_SIZES = {48.0f, 64.0f, 72.0f, 128.0f};
 
 BubbleGame::BubbleGame(
     unique_sdl_renderer_ptr renderer,
+    unique_sdl_audio_stream_ptr device_audio_stream,
     unique_sdl_window_ptr window)
-    : Game(std::move(renderer), std::move(window)),
-      random_device_(),
+    : Game(
+          std::move(renderer),
+          std::move(device_audio_stream),
+          std::move(window)),
       random_engine_(random_device_()) {}
 
 SDL_AppResult BubbleGame::on_init() {

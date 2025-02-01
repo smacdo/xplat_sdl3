@@ -4,8 +4,12 @@
 
 #include <filesystem>
 
-Game::Game(unique_sdl_renderer_ptr renderer, unique_sdl_window_ptr window)
+Game::Game(
+    unique_sdl_renderer_ptr renderer,
+    unique_sdl_audio_stream_ptr device_audio_stream,
+    unique_sdl_window_ptr window)
     : renderer_(std::move(renderer)),
+      device_audio_stream_(std::move(device_audio_stream)),
       window_(std::move(window)) {}
 
 Game::~Game() {}
@@ -17,12 +21,6 @@ SDL_AppResult Game::init() {
       SDL_LOG_PRIORITY_INFO,
       "app base path is %s",
       SDL_GetBasePath());
-
-  // Initialize SDL3 systems.
-  if (!SDL_Init(SDL_INIT_VIDEO)) {
-    SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "SDL Error: %s", SDL_GetError());
-    return SDL_APP_FAILURE;
-  }
 
   // Show the main window.
   SDL_ShowWindow(window_.get());

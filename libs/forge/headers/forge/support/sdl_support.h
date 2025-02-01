@@ -2,11 +2,22 @@
 
 #include <memory>
 
+struct SDL_AudioStream;
 struct SDL_IOStream;
 struct SDL_Renderer;
 struct SDL_Surface;
 struct SDL_Texture;
 struct SDL_Window;
+
+/// Functor that calls `SDL_CloseIO` on a `SDL_AudioStream*`. Intended for use
+/// with a smart pointer that automatically closes the stream when it goes out
+/// scope.
+struct SdlAudioStreamDestroyer {
+  void operator()(SDL_AudioStream* stream) const noexcept;
+};
+
+using unique_sdl_audio_stream_ptr =
+    std::unique_ptr<SDL_AudioStream, SdlAudioStreamDestroyer>;
 
 /// Functor that calls `SDL_CloseIO` on a `SDL_IOStream*`. Intended for use with
 /// a smart pointer that automatically closes the stream when it goes out

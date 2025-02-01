@@ -2,6 +2,11 @@
 
 #include <SDL3/SDL.h>
 
+void SdlAudioStreamDestroyer::operator()(
+    SDL_AudioStream* stream) const noexcept {
+  SDL_DestroyAudioStream(stream);
+}
+
 void SdlIoCloser::operator()(SDL_IOStream* stream) const noexcept {
   if (!SDL_CloseIO(stream)) {
     // TODO: Print the name of the file after reverse engineering it from the
