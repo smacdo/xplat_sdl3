@@ -7,7 +7,6 @@
 #include <stb/stb_image.h>
 
 #include <format>
-#include <string_view>
 
 std::unique_ptr<SDL_Texture, SdlTextureCloser>
     load_texture(SDL_Renderer* renderer, const std::string_view filename) {

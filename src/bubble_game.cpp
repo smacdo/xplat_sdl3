@@ -25,8 +25,8 @@
 //        - number of update, render calls / second
 //        - memory use
 
-constexpr bool DEBUG_RENDER_ENTITY = false;
-constexpr bool DEBUG_RENDER_POP = false;
+bool GDebugRenderEntity = false;
+bool GDebugRenderClick = false;
 
 constexpr int BUBBLE_COUNT_MAX = 64;
 constexpr int BUBBLE_COUNT_MIN = 64;
@@ -78,12 +78,11 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
   elapsed_time_s_ += delta_s;
 
   // Randomizers for bubble properties when spawning.
-  const auto max_bubble_size =
-      *(std::max_element(BUBBLE_SIZES.begin(), BUBBLE_SIZES.end()));
+  constexpr auto MAX_BUBBLE_SIZE = *(std::ranges::max_element(BUBBLE_SIZES));
 
   std::uniform_real_distribution<float> start_x_distribution(
-      BUBBLE_MIN_X + max_bubble_size / 2.f,
-      static_cast<float>(pixel_width()) - max_bubble_size / 2.f);
+      BUBBLE_MIN_X + MAX_BUBBLE_SIZE / 2.f,
+      static_cast<float>(pixel_width()) - MAX_BUBBLE_SIZE / 2.f);
 
   std::uniform_real_distribution<float> speed_distribution(
       BUBBLE_MIN_FLOAT_SPEED, BUBBLE_MAX_FLOAT_SPEED);
@@ -147,9 +146,6 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
 }
 
 SDL_AppResult BubbleGame::on_render(float delta_s, float extrapolation) {
-  const auto future_time_s =
-      (elapsed_time_s_ * 1000.f + kMsPerUpdate * extrapolation) / 1000.f;
-
   // Draw a color that changes over time.
   SDL_SetRenderDrawColor(renderer_.get(), 25, 150, 255, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(renderer_.get());
@@ -158,7 +154,9 @@ SDL_AppResult BubbleGame::on_render(float delta_s, float extrapolation) {
 
   // Draw bubbles on the screen.
   for (const auto& bubble : bubbles_) {
-    draw_bubble(bubble.x, bubble.y, bubble.size);
+    if (draw_bubble(bubble.x, bubble.y, bubble.size) == SDL_APP_FAILURE) {
+      return SDL_APP_FAILURE;
+    }
   }
 
   // Draw a debug line from the click point to the top left of the popped
@@ -183,8 +181,6 @@ SDL_AppResult BubbleGame::draw_bubble(float x, float y, float size) const {
 
   const auto top = y + half_size;
   const auto left = x - half_size;
-  const auto bottom = y - half_size;
-  const auto right = x + half_size;
 
   SDL_FRect src_rect{
       0, 0, BUBBLE_PIXEL_WIDTH_AND_HEIGHT, BUBBLE_PIXEL_WIDTH_AND_HEIGHT};
@@ -197,7 +193,7 @@ SDL_AppResult BubbleGame::draw_bubble(float x, float y, float size) const {
   }
 
   // Debug helpers:
-  if (DEBUG_RENDER_ENTITY) {
+  if (GDebugRenderEntity) {
     //  Show the rendered rectangle.
     SDL_SetRenderDrawColor(renderer_.get(), 255, 0, 255, SDL_ALPHA_OPAQUE);
     SDL_RenderRect(renderer_.get(), &dest_rect);
@@ -217,7 +213,7 @@ SDL_AppResult BubbleGame::on_mouse_click(int mouse_x, int mouse_y) {
 
 bool BubbleGame::pop_bubble_at(float x, float y) {
   // Check if any bubbles intersect the pop point. Pop the first bubble that
-  // nmtches.
+  // natches.
   for (auto& bubble : bubbles_) {
     const auto delta_x = x - bubble.x;
     const auto delta_y = y - bubble.y;
@@ -234,7 +230,7 @@ bool BubbleGame::pop_bubble_at(float x, float y) {
           distance_squared);
       bubble.alive = false;
 
-      if (DEBUG_RENDER_POP) {
+      if (GDebugRenderClick) {
         debug_draw_time_left_s = 10.0f;
         debug_mx_ = x;
         debug_my_ = pixel_height() - y;
@@ -247,7 +243,7 @@ bool BubbleGame::pop_bubble_at(float x, float y) {
   }
 
   // No hit
-  if (DEBUG_RENDER_POP) {
+  if (GDebugRenderClick) {
     debug_draw_time_left_s = 10.0f;
     debug_mx_ = x;
     debug_my_ = pixel_height() - y;
@@ -259,8 +255,6 @@ bool BubbleGame::pop_bubble_at(float x, float y) {
 }
 
 size_t BubbleGame::bubble_count() const {
-  return std::count_if(
-      bubbles_.begin(), bubbles_.end(), [](const auto& bubble) {
-        return bubble.alive;
-      });
+  return std::ranges::count_if(
+      bubbles_, [](const auto& bubble) { return bubble.alive; });
 }

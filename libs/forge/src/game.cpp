@@ -32,7 +32,7 @@ SDL_AppResult Game::init() {
   SDL_GetWindowSizeInPixels(window_.get(), &pixel_width_, &pixel_height_);
 
   SDL_Log("Window size: %ix%i", width, height);
-  SDL_Log("Backbuffer size: %ix%i", pixel_width_, pixel_height_);
+  SDL_Log("Back buffer size: %ix%i", pixel_width_, pixel_height_);
 
   if (width != pixel_width_) {
     SDL_Log(
@@ -44,10 +44,10 @@ SDL_AppResult Game::init() {
   return on_init();
 }
 
-SDL_AppResult Game::handle_event(SDL_Event* event) {
+SDL_AppResult Game::handle_event(const SDL_Event* event) {
   SDL_assert(event != nullptr);
 
-  switch (event->type) {
+  switch (event->type) { // NOLINT
     case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
       pixel_width_ = event->window.data1;
       pixel_height_ = event->window.data2;
@@ -96,6 +96,8 @@ SDL_AppResult Game::handle_event(SDL_Event* event) {
       SDL_Log("Game::handle_event SDL_EVENT_QUIT, quit_requested => true");
       quit_requested_ = true;
       break;
+    default:
+      break;
   }
 
   return SDL_APP_CONTINUE;
@@ -137,7 +139,7 @@ SDL_AppResult Game::iterate() {
   // TODO: Detect when the renderer exceeds the allowed delta time.
   on_render(delta_s, lag_time_ms_ / static_cast<float>(kMsPerUpdate));
 
-  // Check if the user wants to continue running the game or if its tiem to
+  // Check if the user wants to continue running the game or if it's time to
   // quit.
   return quit_requested_ ? SDL_APP_SUCCESS : SDL_APP_CONTINUE;
 }

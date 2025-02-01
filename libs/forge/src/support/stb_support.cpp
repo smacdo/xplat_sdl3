@@ -7,18 +7,18 @@ stbi_io_callbacks create_stbi_sdl2_io_callbacks() {
   return stbi_io_callbacks{
       .read = [](void* user, char* data, int size) -> int {
         SDL_assert(user != nullptr);
-        auto stream = reinterpret_cast<SDL_IOStream*>(user);
+        auto stream = static_cast<SDL_IOStream*>(user);
         const auto bytes_read = SDL_ReadIO(stream, data, size);
         return static_cast<int>(bytes_read);
       },
       .skip = [](void* user, int n) -> void {
         SDL_assert(user != nullptr);
-        auto stream = reinterpret_cast<SDL_IOStream*>(user);
+        auto stream = static_cast<SDL_IOStream*>(user);
         SDL_SeekIO(stream, n, SDL_IO_SEEK_CUR);
       },
       .eof = [](void* user) -> int {
         SDL_assert(user != nullptr);
-        auto stream = reinterpret_cast<SDL_IOStream*>(user);
+        auto stream = static_cast<SDL_IOStream*>(user);
         return SDL_GetIOStatus(stream) == SDL_IO_STATUS_EOF ? 1 : 0;
       }};
 }

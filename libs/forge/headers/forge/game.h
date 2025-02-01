@@ -24,7 +24,7 @@ public:
   SDL_AppResult init();
 
   /// Handle an event received from the host platform.
-  SDL_AppResult handle_event(SDL_Event* event);
+  SDL_AppResult handle_event(const SDL_Event* event);
 
   /// Advance the game's simulation logic and rendering.
   SDL_AppResult iterate();
@@ -39,7 +39,7 @@ protected:
   /// Called at the end of the game initialization phase.
   virtual SDL_AppResult on_init();
 
-  /// Called every update to allow a game to resond to player inputs.
+  /// Called every update to allow a game to respond to player inputs.
   ///
   /// @param delta_s The amount of time that has elapsed in seconds since the
   ///                last call to this function.
@@ -54,6 +54,8 @@ protected:
 
   /// Called to render the game's simulation state.
   ///
+  /// @param delta_s The amount of time that has elapsed in seconds since the
+  ///                last call to this function.
   /// @param extrapolation An interpolation value [0.0, 1.0) representing the
   ///                      time between the last update and the upcoming update.
   virtual SDL_AppResult on_render(float delta_s, float extrapolation);

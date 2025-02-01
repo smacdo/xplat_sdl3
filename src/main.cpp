@@ -54,7 +54,7 @@ SDL_AppResult SDL_AppInit(void** app_state_in, int argc, char* argv[]) {
     SDL_Log("Game has been initialized");
   }
 
-  // Store the game instance in the application context that is passed to all of
+  // Store the game instance in the application context that is passed to all
   // the SDL application callbacks.
   auto app_state = reinterpret_cast<AppState**>(app_state_in);
   *app_state = new AppState{std::move(game)};
@@ -62,18 +62,20 @@ SDL_AppResult SDL_AppInit(void** app_state_in, int argc, char* argv[]) {
   return SDL_APP_CONTINUE;
 }
 
-SDL_AppResult SDL_AppEvent(void* app_state_untyped, SDL_Event* event) {
-  auto* app_state = reinterpret_cast<AppState*>(app_state_untyped);
+SDL_AppResult SDL_AppEvent(
+    void* app_state_untyped,
+    SDL_Event* event) { // NOLINT(readability-non-const-parameter)
+  auto* app_state = static_cast<AppState*>(app_state_untyped);
   return app_state->game->handle_event(event);
 }
 
 SDL_AppResult SDL_AppIterate(void* app_state_untyped) {
-  auto* app_state = reinterpret_cast<AppState*>(app_state_untyped);
+  auto* app_state = static_cast<AppState*>(app_state_untyped);
   return app_state->game->iterate();
 }
 
 void SDL_AppQuit(void* app_state_untyped, SDL_AppResult result) {
-  auto* app_state = reinterpret_cast<AppState*>(app_state_untyped);
+  auto* app_state = static_cast<AppState*>(app_state_untyped);
   delete app_state;
 
   SDL_Log("Application quit successfully");
