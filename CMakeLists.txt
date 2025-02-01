@@ -110,6 +110,14 @@ target_compile_definitions(${GAME_EXE_NAME} PUBLIC SDL_MAIN_USE_CALLBACKS)
 
 target_link_libraries(${GAME_EXE_NAME} PUBLIC stb_image)
 
+### Copy game assets to output directory when building.
+if (NOT APPLE)
+  add_custom_target(copy_content
+          COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/content ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content
+  )
+  add_dependencies(${GAME_EXE_NAME} copy_content)
+endif ()
+
 ### Platform specific support.
 # Emscripten (web builds).
 if (CMAKE_SYSTEM_NAME MATCHES Emscripten)
@@ -166,47 +174,10 @@ if(APPLE)
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist.in"
     XCODE_GENERATE_SCHEME TRUE
   )
-
-
 endif()
 
 # Visual Studio settings
+# Default project:
 set_property(
-  # The default project.
   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT "${GAME_EXE_NAME}"
 )
-
-#==============================================================================#
-# Game assets                                                                  #
-#==============================================================================#
-# TODO: Verify this works for non-Apple platforms.
-macro(add_assets)
-    cmake_parse_arguments("MY" "TARGET" "FILES" ${ARGN})
-
-    foreach(src ${MY_SOURCES})
-        set(OUTF "${CMAKE_CURRENT_BINARY_DIR}/assets/${src}")
-        get_filename_component(PARENT_DIR "${OUTF}" DIRECTORY)
-        add_custom_command(
-            OUTPUT "${OUTF}"
-            COMMAND echo "Copy ${src}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${PARENT_DIR}"
-            COMMAND  cp -r "${CMAKE_CURRENT_SOURCE_DIR}/assets/${src}" "${OUTF}"
-            DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${src}"
-            VERBATIM
-        )
-
-        # src in order to get listed in the IDE, OUTF to declare the build relationship
-        target_sources("${MY_TARGET}" PRIVATE "${src}" "${OUTF}")
-    endforeach()
-endmacro()
-
-add_assets(TARGET ${GAME_EXE_NAME}
-  FILES
-    bubble.png  
-)
-
-#add_custom_target(copy_assets
-#  COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_LIST_DIR}/copy-assets.cmake
-#)
-
-#add_dependencies(${GAME_EXE_NAME} copy_assets)
