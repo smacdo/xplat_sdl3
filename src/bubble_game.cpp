@@ -78,11 +78,8 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
   elapsed_time_s_ += delta_s;
 
   // Randomizers for bubble properties when spawning.
-  constexpr auto MAX_BUBBLE_SIZE = *(std::ranges::max_element(BUBBLE_SIZES));
-
   std::uniform_real_distribution<float> start_x_distribution(
-      BUBBLE_MIN_X + MAX_BUBBLE_SIZE / 2.f,
-      static_cast<float>(pixel_width()) - MAX_BUBBLE_SIZE / 2.f);
+      BUBBLE_MIN_X, pixel_width());
 
   std::uniform_real_distribution<float> speed_distribution(
       BUBBLE_MIN_FLOAT_SPEED, BUBBLE_MAX_FLOAT_SPEED);
@@ -109,7 +106,10 @@ SDL_AppResult BubbleGame::on_update(float delta_s) {
     // Check if this bubble slot is dead, and if so then spawn a new bubble in.
     if (!bubble.alive) {
       bubble.alive = true;
-      bubble.x = start_x_distribution(random_engine_);
+      bubble.x = std::clamp(
+          start_x_distribution(random_engine_),
+          bubble.size / 2,
+          pixel_width() - bubble.size / 2);
       bubble.y = -bubble.size;
       bubble.radius = bubble.size / 2.f * BUBBLE_CLICK_FUZZ;
       bubble.speed = speed_distribution(random_engine_);
