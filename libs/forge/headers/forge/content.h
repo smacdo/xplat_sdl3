@@ -16,3 +16,6 @@ struct SDL_Renderer;
 /// ```
 std::unique_ptr<SDL_Texture, SdlTextureCloser>
     load_texture(SDL_Renderer* renderer, const std::string_view filename);
+
+/// Loads a wav audio file from the game's content directory.
+std::unique_ptr<SdlAudioBuffer> load_wav(const std::string_view filename);

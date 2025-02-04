@@ -47,6 +47,8 @@ private:
   unique_sdl_texture_ptr bubble_texture_;
   float elapsed_time_s_ = 0.0f;
 
+  std::unique_ptr<SdlAudioBuffer> pop_audio_buffer_;
+
   // TODO: move to a debug helper.
   float debug_draw_time_left_s = 0.0f;
   float debug_mx_ = 0.0f;

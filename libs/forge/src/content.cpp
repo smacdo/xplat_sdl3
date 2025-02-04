@@ -92,3 +92,36 @@ std::unique_ptr<SDL_Texture, SdlTextureCloser>
 
   return texture;
 }
+
+std::unique_ptr<SdlAudioBuffer> load_wav(const std::string_view filename) {
+  // Create the final file path relative to the game's resource directory.
+  const auto full_path = std::format("{}{}", SDL_GetBasePath(), filename);
+
+  // Load the wav file using SDL3.
+  auto audio_buffer = std::make_unique<SdlAudioBuffer>();
+
+  if (!SDL_LoadWAV(
+          full_path.c_str(),
+          &audio_buffer->spec,
+          &audio_buffer->data,
+          &audio_buffer->size_in_bytes)) {
+    SDL_LogError(
+        SDL_LOG_CATEGORY_APPLICATION,
+        "failed to create sdl audio buffer when loading wav file: %s",
+        SDL_GetError());
+
+    return nullptr;
+  }
+
+  SDL_LogMessage(
+      SDL_LOG_CATEGORY_APPLICATION,
+      SDL_LOG_PRIORITY_DEBUG,
+      "loaded audio buffer format = %x, channels = %d, freq = %d, file = %.*s",
+      audio_buffer->spec.format,
+      audio_buffer->spec.channels,
+      audio_buffer->spec.freq,
+      static_cast<int>(filename.length()),
+      filename.data());
+
+  return audio_buffer;
+}

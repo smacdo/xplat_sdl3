@@ -2,6 +2,13 @@
 
 #include <SDL3/SDL.h>
 
+SdlAudioBuffer::~SdlAudioBuffer() {
+  SDL_free(data);
+
+  size_in_bytes = 0;
+  data = nullptr;
+}
+
 void SdlAudioStreamDestroyer::operator()(
     SDL_AudioStream* stream) const noexcept {
   SDL_DestroyAudioStream(stream);

@@ -63,7 +63,9 @@ SDL_AppResult SDL_AppInit(void** app_state_in, int argc, char* argv[]) {
       SDL_OpenAudioDeviceStream(
           SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &audio_spec, nullptr, nullptr)};
 
-  if (!device_audio_stream) {
+  if (device_audio_stream) {
+    SDL_ResumeAudioStreamDevice(device_audio_stream.get());
+  } else {
     SDL_LogError(
         SDL_LOG_CATEGORY_CUSTOM,
         "SDL_OpenAudioDeviceStream error: %s",

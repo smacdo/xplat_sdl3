@@ -17,7 +17,6 @@
 // TODO: Make game bubble speed independent of window dimensions.
 // TODO: Scale bubbles to size of window.
 // TODO: Draw a gradient water background.
-// TODO: Play a bubble pop sound.
 // TODO: Display the number of bubbles popped.
 // TODO: Draw debug stats every N seconds (1 sec screen, 5 console)
 //        - time per update() (average, min, max)
@@ -57,11 +56,18 @@ BubbleGame::BubbleGame(
       random_engine_(random_device_()) {}
 
 SDL_AppResult BubbleGame::on_init() {
-  // Load bubble texture.
+  // Load game content.
   bubble_texture_ = load_texture(renderer_.get(), "content/bubble.png");
 
   if (bubble_texture_ == nullptr) {
     SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "failed to load bubble image");
+    return SDL_APP_FAILURE;
+  }
+
+  pop_audio_buffer_ = load_wav("content/pop.wav");
+
+  if (pop_audio_buffer_ == nullptr) {
+    SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "failed to load pop_audio_buffer");
     return SDL_APP_FAILURE;
   }
 
@@ -240,6 +246,14 @@ bool BubbleGame::pop_bubble_at(float x, float y) {
         debug_bx_ = bubble.x;
         debug_by_ = pixel_height() - bubble.y;
       }
+
+      // TODO: refactor playing sound into separate class or method?
+      // TODO: verify `pop_audio_buffer_` is same format as
+      //       `device_audio_stream_`.
+      SDL_PutAudioStreamData(
+          device_audio_stream_.get(),
+          pop_audio_buffer_->data,
+          pop_audio_buffer_->size_in_bytes);
 
       return true;
     }

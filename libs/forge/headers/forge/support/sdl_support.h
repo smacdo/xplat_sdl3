@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SDL3/SDL_audio.h>
 #include <memory>
 
 struct SDL_AudioStream;
@@ -8,6 +9,15 @@ struct SDL_Renderer;
 struct SDL_Surface;
 struct SDL_Texture;
 struct SDL_Window;
+
+/// Helper struct that represents an audio buffer allocated by SDL.
+struct SdlAudioBuffer {
+  uint32_t size_in_bytes = 0;
+  uint8_t* data = nullptr;
+  SDL_AudioSpec spec = {};
+
+  ~SdlAudioBuffer();
+};
 
 /// Functor that calls `SDL_CloseIO` on a `SDL_AudioStream*`. Intended for use
 /// with a smart pointer that automatically closes the stream when it goes out
