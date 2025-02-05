@@ -52,30 +52,9 @@ SDL_AppResult SDL_AppInit(void** app_state_in, int argc, char* argv[]) {
     return SDL_APP_FAILURE;
   }
 
-  // Create an audio stream to play sounds on the user's default audio device.
-  constexpr SDL_AudioSpec audio_spec{
-      .format = SDL_AUDIO_S16,
-      .channels = 2,
-      .freq = 44100,
-  };
-
-  std::unique_ptr<SDL_AudioStream, SdlAudioStreamDestroyer> device_audio_stream{
-      SDL_OpenAudioDeviceStream(
-          SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &audio_spec, nullptr, nullptr)};
-
-  if (device_audio_stream) {
-    SDL_ResumeAudioStreamDevice(device_audio_stream.get());
-  } else {
-    SDL_LogError(
-        SDL_LOG_CATEGORY_CUSTOM,
-        "SDL_OpenAudioDeviceStream error: %s",
-        SDL_GetError());
-    return SDL_APP_FAILURE;
-  }
-
   // Initialize the game.
-  auto game = std::make_unique<GameClass>(
-      std::move(renderer), std::move(device_audio_stream), std::move(window));
+  auto game =
+      std::make_unique<GameClass>(std::move(renderer), std::move(window));
 
   if (game->init() == SDL_APP_FAILURE) {
     SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Game failed to initialize");

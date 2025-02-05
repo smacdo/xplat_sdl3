@@ -3,14 +3,16 @@
 #==============================================================================#
 ### Library definition and source code files.
 add_library(forge STATIC
-  headers/forge/content.h
-  headers/forge/game.h
-  headers/forge/support/sdl_support.h
-  headers/forge/support/stb_support.h
-  src/content.cpp
-  src/game.cpp
-  src/support/sdl_support.cpp
-  src/support/stb_support.cpp
+        headers/forge/audio_manager.h
+        headers/forge/content.h
+        headers/forge/game.h
+        headers/forge/support/sdl_support.h
+        headers/forge/support/stb_support.h
+        src/audio_manager.cpp
+        src/content.cpp
+        src/game.cpp
+        src/support/sdl_support.cpp
+        src/support/stb_support.cpp
 )
 
 ### Unit tests

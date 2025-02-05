@@ -4,6 +4,8 @@
 
 #include <SDL3/SDL.h>
 
+class AudioManager;
+
 /// The base class for all Forge games and is responsible for handling the
 /// common application logic required for all games.
 ///
@@ -14,11 +16,9 @@ public:
   /// Constructor.
   ///
   /// @param renderer Pointer to the `SDL_Renderer` for the main window.
-  /// @param device_audio_stream Pointer to an audio device audio stream.
   /// @param window Pointer to the main SDL window.
   Game(
       unique_sdl_renderer_ptr renderer,
-      unique_sdl_audio_stream_ptr device_audio_stream,
       unique_sdl_window_ptr window);
 
   /// Destructor.
@@ -77,8 +77,8 @@ protected:
   /// The `SDL_Renderer` for the game's main window.
   unique_sdl_renderer_ptr renderer_;
 
-  /// The default audio device for playing audio samples.
-  unique_sdl_audio_stream_ptr device_audio_stream_;
+  /// Game audio manager.
+  std::unique_ptr<AudioManager> audio_;
 
   /// The game's main window.
   unique_sdl_window_ptr window_;

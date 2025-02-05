@@ -1,7 +1,9 @@
 #pragma once
 
 #include <SDL3/SDL_audio.h>
+
 #include <memory>
+#include <string_view>
 
 struct SDL_AudioStream;
 struct SDL_IOStream;
@@ -9,6 +11,31 @@ struct SDL_Renderer;
 struct SDL_Surface;
 struct SDL_Texture;
 struct SDL_Window;
+
+/// Returns a human-readable representation of an audio spec format value.
+constexpr std::string_view audio_format_name(const SDL_AudioFormat format) {
+  switch (format) {
+    case SDL_AUDIO_U8:
+      return "SDL_AUDIO_U8";
+    case SDL_AUDIO_S8:
+      return "SDL_AUDIO_S8";
+    case SDL_AUDIO_S16LE:
+      return "SDL_AUDIO_S16LE";
+    case SDL_AUDIO_S16BE:
+      return "SDL_AUDIO_S16BE";
+    case SDL_AUDIO_S32LE:
+      return "SDL_AUDIO_S32LE";
+    case SDL_AUDIO_S32BE:
+      return "SDL_AUDIO_S32BE";
+    case SDL_AUDIO_F32LE:
+      return "SDL_AUDIO_F32LE";
+    case SDL_AUDIO_F32BE:
+      return "SDL_AUDIO_F32BE";
+    case SDL_AUDIO_UNKNOWN:
+    default:
+      return "SDL_AUDIO_UNKNOWN";
+  }
+}
 
 /// Helper struct that represents an audio buffer allocated by SDL.
 struct SdlAudioBuffer {

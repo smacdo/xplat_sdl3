@@ -1,3 +1,5 @@
+#include "forge/audio_manager.h"
+
 #include <forge/game.h>
 
 #include <forge/support/sdl_support.h>
@@ -6,13 +8,11 @@
 
 Game::Game(
     unique_sdl_renderer_ptr renderer,
-    unique_sdl_audio_stream_ptr device_audio_stream,
     unique_sdl_window_ptr window)
     : renderer_(std::move(renderer)),
-      device_audio_stream_(std::move(device_audio_stream)),
       window_(std::move(window)) {}
 
-Game::~Game() {}
+Game::~Game() = default;
 
 SDL_AppResult Game::init() {
   // Print start up information to assist with troubleshooting.
@@ -21,6 +21,14 @@ SDL_AppResult Game::init() {
       SDL_LOG_PRIORITY_INFO,
       "app base path is %s",
       SDL_GetBasePath());
+
+  // Initialize subsystems.
+  audio_ = std::make_unique<AudioManager>();
+
+  if (const auto audio_init_status = audio_->init();
+      audio_init_status != SDL_APP_CONTINUE) {
+    return audio_init_status;
+  }
 
   // Show the main window.
   SDL_ShowWindow(window_.get());

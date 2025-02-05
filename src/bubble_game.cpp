@@ -2,6 +2,7 @@
 
 #include "bubble_game.h"
 
+#include <forge/audio_manager.h>
 #include <forge/content.h>
 #include <forge/support/sdl_support.h>
 
@@ -47,11 +48,9 @@ constexpr std::array<float, 4> BUBBLE_SIZES = {48.0f, 64.0f, 72.0f, 128.0f};
 
 BubbleGame::BubbleGame(
     unique_sdl_renderer_ptr renderer,
-    unique_sdl_audio_stream_ptr device_audio_stream,
     unique_sdl_window_ptr window)
     : Game(
           std::move(renderer),
-          std::move(device_audio_stream),
           std::move(window)),
       random_engine_(random_device_()) {}
 
@@ -247,14 +246,7 @@ bool BubbleGame::pop_bubble_at(float x, float y) {
         debug_by_ = pixel_height() - bubble.y;
       }
 
-      // TODO: refactor playing sound into separate class or method?
-      // TODO: verify `pop_audio_buffer_` is same format as
-      //       `device_audio_stream_`.
-      SDL_PutAudioStreamData(
-          device_audio_stream_.get(),
-          pop_audio_buffer_->data,
-          pop_audio_buffer_->size_in_bytes);
-
+      audio_->play_once(pop_audio_buffer_.get()); // NOLINT
       return true;
     }
   }

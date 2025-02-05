@@ -12,7 +12,6 @@ class BubbleGame : public Game {
 public:
   BubbleGame(
       unique_sdl_renderer_ptr renderer,
-      unique_sdl_audio_stream_ptr device_audio_stream,
       unique_sdl_window_ptr window);
 
 protected:
