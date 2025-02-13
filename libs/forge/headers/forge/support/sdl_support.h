@@ -46,6 +46,13 @@ struct SdlAudioBuffer {
   ~SdlAudioBuffer();
 };
 
+/// Resamples the given audio buffer if it does not match the target audio spec.
+/// The input audio buffer will be deleted if it does not match the target spec
+/// and remixed.
+std::unique_ptr<SdlAudioBuffer> resample_if_needed(
+    std::unique_ptr<SdlAudioBuffer> audio_buffer,
+    const SDL_AudioSpec& target_spec);
+
 /// Functor that calls `SDL_CloseIO` on a `SDL_AudioStream*`. Intended for use
 /// with a smart pointer that automatically closes the stream when it goes out
 /// scope.

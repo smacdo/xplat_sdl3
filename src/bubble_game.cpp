@@ -63,7 +63,7 @@ SDL_AppResult BubbleGame::on_init() {
     return SDL_APP_FAILURE;
   }
 
-  pop_audio_buffer_ = load_wav("content/pop.wav");
+  pop_audio_buffer_ = load_ogg("content/pop.ogg");
 
   if (pop_audio_buffer_ == nullptr) {
     SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "failed to load pop_audio_buffer");

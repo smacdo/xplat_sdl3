@@ -93,7 +93,7 @@ target_sources(${GAME_EXE_NAME}
 ### Game asset files.
 set(GAME_CONTENT_FILES
         content/bubble.png
-        content/pop.wav
+        content/pop.ogg
 )
 
 ### Build configuration.
