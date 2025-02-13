@@ -25,8 +25,8 @@ std::unique_ptr<SdlAudioBuffer> resample_if_needed(
       SDL_LOG_CATEGORY_APPLICATION,
       SDL_LOG_PRIORITY_DEBUG,
       "resampling audio buffer from format = %.*s, channels = %d, freq = %d "
-        "to format = %.*s, channels = %d, freq = %d",
-        static_cast<int>(audio_format_name(audio_buffer->spec.format).length()),
+      "to format = %.*s, channels = %d, freq = %d",
+      static_cast<int>(audio_format_name(audio_buffer->spec.format).length()),
         audio_format_name(audio_buffer->spec.format).data(),
         audio_buffer->spec.channels,
         audio_buffer->spec.freq,
