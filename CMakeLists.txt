@@ -101,10 +101,11 @@ set(GAME_CONTENT_FILES
 target_compile_features(${GAME_EXE_NAME} PUBLIC cxx_std_20)
 
 # Add engine libraries.
+add_subdirectory(libs/bmf_reader)
 add_subdirectory(libs/forge)
 
 # Link to SDL3 and other third party libraries.
-target_link_libraries(${GAME_EXE_NAME} PUBLIC forge)
+target_link_libraries(${GAME_EXE_NAME} PUBLIC bmf_reader forge)
 
 target_link_libraries(${GAME_EXE_NAME} PUBLIC SDL3::SDL3-static)
 target_compile_definitions(${GAME_EXE_NAME} PUBLIC SDL_MAIN_USE_CALLBACKS)
